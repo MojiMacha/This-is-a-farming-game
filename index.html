@@ -1,1 +1,2808 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+<title>Mini Farm - Animal Edition</title>
+
+<style>
+*{
+    box-sizing:border-box;
+    margin:0;
+    padding:0;
+}
+
+body{
+    font-family:"Segoe UI",Tahoma,Arial,sans-serif;
+    min-height:100vh;
+    color:#263238;
+    background:
+        linear-gradient(
+            180deg,
+            #87ceeb 0%,
+            #c8f1ff 34%,
+            #9bd56d 35%,
+            #5e9f45 100%
+        );
+}
+
+button{
+    font-family:inherit;
+    cursor:pointer;
+    border:0;
+}
+
+button:active{
+    transform:scale(.95);
+}
+
+button:disabled{
+    opacity:.45;
+    cursor:not-allowed;
+}
+
+/* START */
+
+#startScreen{
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    padding:20px;
+}
+
+.start-card{
+    width:100%;
+    max-width:470px;
+    background:rgba(255,255,255,.94);
+    padding:35px;
+    border-radius:30px;
+    text-align:center;
+    box-shadow:0 25px 70px rgba(0,0,0,.25);
+}
+
+.logo{
+    font-size:70px;
+}
+
+.start-title{
+    font-size:42px;
+    font-weight:900;
+    color:#2e7d32;
+}
+
+.start-sub{
+    color:#607d60;
+    margin:8px 0 25px;
+}
+
+#nameInput{
+    width:100%;
+    padding:15px;
+    border:2px solid #81c784;
+    border-radius:15px;
+    font-size:18px;
+    text-align:center;
+    outline:none;
+}
+
+#startButton{
+    width:100%;
+    margin-top:15px;
+    padding:16px;
+    border-radius:18px;
+    color:white;
+    font-size:20px;
+    font-weight:bold;
+    background:linear-gradient(135deg,#43a047,#81c784);
+    box-shadow:0 7px 0 #2e7d32;
+}
+
+/* GAME */
+
+#game{
+    display:none;
+    min-height:100vh;
+    padding-bottom:40px;
+}
+
+/* HEADER */
+
+.header{
+    position:sticky;
+    top:0;
+    z-index:50;
+    padding:12px;
+    background:rgba(255,255,255,.92);
+    backdrop-filter:blur(12px);
+    box-shadow:0 5px 20px rgba(0,0,0,.15);
+}
+
+.header-inner{
+    max-width:1250px;
+    margin:auto;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+}
+
+.player{
+    display:flex;
+    align-items:center;
+    gap:10px;
+}
+
+.avatar{
+    width:52px;
+    height:52px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    border-radius:50%;
+    background:#e8f5e9;
+    font-size:30px;
+    border:3px solid #81c784;
+}
+
+.player-name{
+    font-weight:900;
+}
+
+.level{
+    font-size:13px;
+    color:#689f38;
+}
+
+.center-info{
+    text-align:center;
+    flex:1;
+}
+
+.farm-title{
+    font-size:24px;
+    font-weight:900;
+    color:#2e7d32;
+}
+
+.exp-wrap{
+    width:180px;
+    margin:5px auto 0;
+}
+
+.exp-bar{
+    height:13px;
+    background:#ddd;
+    border-radius:20px;
+    overflow:hidden;
+    border:2px solid #444;
+}
+
+#expFill{
+    height:100%;
+    width:0%;
+    background:linear-gradient(90deg,#43a047,#cddc39);
+    transition:.3s;
+}
+
+.exp-text{
+    font-size:11px;
+}
+
+.money{
+    background:#fff8c4;
+    border:2px solid #fbc02d;
+    padding:9px 14px;
+    border-radius:14px;
+    font-weight:900;
+    white-space:nowrap;
+}
+
+/* TOOLBAR */
+
+.toolbar{
+    max-width:1100px;
+    margin:20px auto 10px;
+    padding:0 15px;
+    display:flex;
+    justify-content:center;
+    gap:10px;
+    flex-wrap:wrap;
+}
+
+.tool{
+    padding:12px 18px;
+    border-radius:16px;
+    color:white;
+    font-weight:bold;
+    font-size:15px;
+    box-shadow:0 5px 0 rgba(0,0,0,.2);
+}
+
+.tool.plant{background:#43a047}
+.tool.water{background:#039be5}
+.tool.harvest{background:#fb8c00}
+.tool.shop{background:#8e24aa}
+.tool.inventory{background:#546e7a}
+.tool.mission{background:#3949ab}
+.tool.animal{background:#6d4c41}
+.tool.feed{background:#8d6e63}
+.tool.clean{background:#00897b}
+.tool.collect{background:#ef6c00}
+
+.tool.active{
+    transform:translateY(4px);
+    box-shadow:none;
+}
+
+/* FARM */
+
+.section{
+    max-width:1100px;
+    margin:20px auto;
+    padding:20px;
+    background:rgba(255,255,255,.22);
+    border-radius:30px;
+}
+
+.section-title{
+    text-align:center;
+    color:white;
+    text-shadow:0 2px 4px rgba(0,0,0,.35);
+    margin-bottom:15px;
+}
+
+.farm{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(130px,150px));
+    justify-content:center;
+    gap:18px;
+}
+
+.plot{
+    position:relative;
+    width:150px;
+    height:150px;
+    border-radius:25px;
+    background:radial-gradient(circle at 30% 30%,#a98263,#795548);
+    border:5px solid #6d4c41;
+    box-shadow:
+        inset 0 8px 15px rgba(0,0,0,.25),
+        0 8px 15px rgba(0,0,0,.2);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-size:65px;
+    transition:.25s;
+    overflow:hidden;
+}
+
+.plot:hover{
+    transform:translateY(-5px) scale(1.03);
+}
+
+.plot.empty::after{
+    content:"คลิกเพื่อปลูก";
+    position:absolute;
+    bottom:8px;
+    color:#fff;
+    font-size:11px;
+    background:rgba(0,0,0,.4);
+    padding:4px 8px;
+    border-radius:10px;
+}
+
+.grow-time{
+    position:absolute;
+    top:7px;
+    left:7px;
+    right:7px;
+    height:8px;
+    background:rgba(0,0,0,.3);
+    border-radius:10px;
+    overflow:hidden;
+}
+
+.grow-fill{
+    height:100%;
+    background:#76ff03;
+    width:0%;
+}
+
+/* ANIMALS */
+
+.animal-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+    gap:15px;
+}
+
+.animal-card{
+    background:rgba(255,255,255,.95);
+    border-radius:22px;
+    padding:18px;
+    box-shadow:0 8px 20px rgba(0,0,0,.15);
+    border:3px solid #d7ccc8;
+}
+
+.animal-head{
+    display:flex;
+    align-items:center;
+    gap:12px;
+}
+
+.animal-icon{
+    font-size:55px;
+}
+
+.animal-name{
+    font-size:19px;
+    font-weight:900;
+}
+
+.animal-id{
+    font-size:11px;
+    color:#777;
+}
+
+.stat{
+    margin-top:9px;
+}
+
+.stat-line{
+    display:flex;
+    justify-content:space-between;
+    font-size:12px;
+    margin-bottom:3px;
+}
+
+.stat-bar{
+    height:9px;
+    background:#ddd;
+    border-radius:20px;
+    overflow:hidden;
+}
+
+.stat-fill{
+    height:100%;
+    border-radius:20px;
+}
+
+.hunger{background:#ff9800}
+.health{background:#e53935}
+.happy{background:#ec407a}
+.clean{background:#29b6f6}
+
+.animal-status{
+    margin-top:10px;
+    padding:8px;
+    background:#f5f5f5;
+    border-radius:12px;
+    text-align:center;
+    font-size:13px;
+}
+
+.animal-actions{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:7px;
+    margin-top:10px;
+}
+
+.animal-actions button{
+    padding:9px;
+    border-radius:11px;
+    color:white;
+    font-weight:bold;
+}
+
+.feed-btn{background:#8d6e63}
+.clean-btn{background:#00897b}
+.collect-btn{background:#ef6c00}
+
+/* SEED MENU */
+
+.seed-menu{
+    display:none;
+    position:fixed;
+    left:50%;
+    bottom:20px;
+    transform:translateX(-50%);
+    z-index:100;
+    width:90%;
+    max-width:420px;
+    padding:15px;
+    background:white;
+    border-radius:25px;
+    box-shadow:0 15px 50px rgba(0,0,0,.3);
+}
+
+.seed-grid{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:10px;
+    margin-top:10px;
+}
+
+.seed{
+    padding:14px;
+    background:#f1f8e9;
+    border-radius:15px;
+    font-weight:bold;
+}
+
+/* POPUP */
+
+.popup{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.55);
+    z-index:200;
+    justify-content:center;
+    align-items:center;
+    padding:20px;
+}
+
+.popup-card{
+    width:100%;
+    max-width:600px;
+    max-height:88vh;
+    overflow:auto;
+    background:white;
+    border-radius:25px;
+    padding:25px;
+    box-shadow:0 20px 60px rgba(0,0,0,.4);
+}
+
+.popup-title{
+    text-align:center;
+    font-size:28px;
+    color:#2e7d32;
+    margin-bottom:20px;
+}
+
+.close{
+    width:100%;
+    margin-top:15px;
+    padding:13px;
+    background:#78909c;
+    color:white;
+    border-radius:14px;
+    font-weight:bold;
+}
+
+/* SHOP */
+
+.shop-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    padding:13px;
+    margin-bottom:10px;
+    background:#f1f8e9;
+    border-radius:15px;
+}
+
+.buy{
+    padding:9px 13px;
+    border-radius:10px;
+    background:#43a047;
+    color:white;
+    font-weight:bold;
+}
+
+/* INVENTORY */
+
+.inv-grid{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:12px;
+}
+
+.inv{
+    text-align:center;
+    padding:18px;
+    background:#f5f5f5;
+    border-radius:18px;
+}
+
+.inv-icon{
+    font-size:40px;
+}
+
+/* MISSION */
+
+.mission{
+    padding:15px;
+    background:#f5f5f5;
+    border-radius:15px;
+    margin-bottom:10px;
+}
+
+.mission.completed{
+    border:2px solid #66bb6a;
+    background:#e8f5e9;
+}
+
+.claim{
+    margin-top:8px;
+    padding:9px 15px;
+    background:#ffb300;
+    color:white;
+    border-radius:10px;
+    font-weight:bold;
+}
+
+/* STATUS */
+
+#status{
+    position:fixed;
+    left:50%;
+    bottom:25px;
+    transform:translateX(-50%);
+    z-index:300;
+    padding:12px 20px;
+    background:rgba(33,33,33,.92);
+    color:white;
+    border-radius:20px;
+    display:none;
+    font-weight:bold;
+    max-width:90%;
+    text-align:center;
+}
+
+/* MOBILE */
+
+@media(max-width:650px){
+
+    .header-inner{
+        flex-wrap:wrap;
+    }
+
+    .center-info{
+        order:3;
+        flex-basis:100%;
+    }
+
+    .farm{
+        grid-template-columns:repeat(2,130px);
+    }
+
+    .plot{
+        width:130px;
+        height:130px;
+        font-size:55px;
+    }
+
+    .farm-title{
+        font-size:20px;
+    }
+
+    .animal-grid{
+        grid-template-columns:1fr;
+    }
+
+    .money{
+        font-size:13px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<!-- START -->
+
+<div id="startScreen">
+
+<div class="start-card">
+
+<div class="logo">🌱🐔</div>
+
+<div class="start-title">Mini Farm</div>
+
+<div class="start-sub">
+ฟาร์มปลูกพืชและเลี้ยงสัตว์
+</div>
+
+<input
+id="nameInput"
+placeholder="ชื่อชาวสวน"
+maxlength="20">
+
+<button id="startButton" onclick="startGame()">
+🚜 เริ่มทำฟาร์ม
+</button>
+
+</div>
+</div>
+
+
+<!-- GAME -->
+
+<div id="game">
+
+<header class="header">
+
+<div class="header-inner">
+
+<div class="player">
+
+<div class="avatar">🧑‍🌾</div>
+
+<div>
+<div class="player-name" id="playerName">ชาวสวน</div>
+<div class="level" id="levelText">Level 1</div>
+</div>
+
+</div>
+
+<div class="center-info">
+
+<div class="farm-title">
+🏡 สวนแห่งความสุข
+</div>
+
+<div class="exp-wrap">
+
+<div class="exp-bar">
+<div id="expFill"></div>
+</div>
+
+<div class="exp-text" id="expText">
+0 / 100 EXP
+</div>
+
+</div>
+
+</div>
+
+<div class="money">
+💰 <span id="money">100</span>
+</div>
+
+</div>
+</header>
+
+
+<!-- TOOLBAR -->
+
+<div class="toolbar">
+
+<button class="tool plant" onclick="choosePlant()">
+🌱 ปลูก
+</button>
+
+<button class="tool water" onclick="chooseTool('water')">
+💧 รดน้ำ
+</button>
+
+<button class="tool harvest" onclick="chooseTool('harvest')">
+🧺 เก็บเกี่ยว
+</button>
+
+<button class="tool animal" onclick="openAnimals()">
+🐄 สัตว์
+</button>
+
+<button class="tool feed" onclick="feedAll()">
+🌾 ให้อาหารทั้งหมด
+</button>
+
+<button class="tool shop" onclick="openPopup('shopPopup')">
+🏪 ร้านค้า
+</button>
+
+<button class="tool inventory" onclick="openInventory()">
+🎒 กระเป๋า
+</button>
+
+<button class="tool mission" onclick="openMissions()">
+📜 ภารกิจ
+</button>
+
+</div>
+
+
+<!-- FARM -->
+
+<div class="section">
+
+<h2 class="section-title">
+🌱 แปลงปลูก
+</h2>
+
+<div class="farm" id="farm"></div>
+
+</div>
+
+
+<!-- ANIMAL AREA -->
+
+<div class="section">
+
+<h2 class="section-title">
+🐄 ฟาร์มสัตว์
+</h2>
+
+<div class="animal-grid" id="animalGrid"></div>
+
+</div>
+
+
+<!-- SEED MENU -->
+
+<div class="seed-menu" id="seedMenu">
+
+<h3>🌱 เลือกเมล็ดพันธุ์</h3>
+
+<div class="seed-grid">
+
+<button class="seed" onclick="selectSeed('carrot')">
+🥕 แครอท<br><small>5 💰</small>
+</button>
+
+<button class="seed" onclick="selectSeed('flower')">
+🌷 ดอกไม้<br><small>5 💰</small>
+</button>
+
+<button class="seed" onclick="selectSeed('tomato')">
+🍅 มะเขือเทศ<br><small>10 💰 / Lv.5</small>
+</button>
+
+<button class="seed" onclick="selectSeed('apple')">
+🍎 แอปเปิล<br><small>20 💰 / Lv.10</small>
+</button>
+
+</div>
+
+<button class="close" onclick="closeSeedMenu()">
+ปิด
+</button>
+
+</div>
+
+
+<!-- SHOP -->
+
+<div class="popup" id="shopPopup">
+
+<div class="popup-card">
+
+<h2 class="popup-title">🏪 ร้านค้า</h2>
+
+<h3>🌱 เมล็ดพันธุ์</h3>
+<br>
+
+<div class="shop-row">
+<span>🥕 เมล็ดแครอท<br>5 💰</span>
+<button class="buy" onclick="buySeed('carrot')">ซื้อ</button>
+</div>
+
+<div class="shop-row">
+<span>🌷 เมล็ดดอกไม้<br>5 💰</span>
+<button class="buy" onclick="buySeed('flower')">ซื้อ</button>
+</div>
+
+<div class="shop-row">
+<span>🍅 เมล็ดมะเขือเทศ<br>10 💰<br>🔒 Level 5</span>
+<button class="buy" onclick="buySeed('tomato')">ซื้อ</button>
+</div>
+
+<div class="shop-row">
+<span>🍎 เมล็ดแอปเปิล<br>20 💰<br>🔒 Level 10</span>
+<button class="buy" onclick="buySeed('apple')">ซื้อ</button>
+</div>
+
+<hr style="margin:15px 0">
+
+<h3>🐄 สัตว์</h3>
+<br>
+
+<div class="shop-row">
+<span>🐔 ไก่<br>100 💰</span>
+<button class="buy" onclick="buyAnimal('chicken')">ซื้อ</button>
+</div>
+
+<div class="shop-row">
+<span>🐄 วัว<br>500 💰<br>🔒 Level 3</span>
+<button class="buy" onclick="buyAnimal('cow')">ซื้อ</button>
+</div>
+
+<div class="shop-row">
+<span>🐖 หมู<br>350 💰<br>🔒 Level 4</span>
+<button class="buy" onclick="buyAnimal('pig')">ซื้อ</button>
+</div>
+
+<div class="shop-row">
+<span>🐑 แกะ<br>450 💰<br>🔒 Level 5</span>
+<button class="buy" onclick="buyAnimal('sheep')">ซื้อ</button>
+</div>
+
+<hr style="margin:15px 0">
+
+<h3>🌾 อาหารสัตว์</h3>
+<br>
+
+<div class="shop-row">
+<span>🌾 อาหารสัตว์ x5<br>25 💰</span>
+<button class="buy" onclick="buyFeed()">ซื้อ</button>
+</div>
+
+<hr style="margin:15px 0">
+
+<h3>💰 ขายผลผลิต</h3>
+<br>
+
+<div class="shop-row">
+<span>🥕 แครอท — 20 💰</span>
+<button class="buy" onclick="sellProduce('carrot')">ขาย</button>
+</div>
+
+<div class="shop-row">
+<span>🌷 ดอกไม้ — 25 💰</span>
+<button class="buy" onclick="sellProduce('flower')">ขาย</button>
+</div>
+
+<div class="shop-row">
+<span>🍅 มะเขือเทศ — 30 💰</span>
+<button class="buy" onclick="sellProduce('tomato')">ขาย</button>
+</div>
+
+<div class="shop-row">
+<span>🍎 แอปเปิล — 60 💰</span>
+<button class="buy" onclick="sellProduce('apple')">ขาย</button>
+</div>
+
+<div class="shop-row">
+<span>🥚 ไข่ — 35 💰</span>
+<button class="buy" onclick="sellProduct('egg')">ขาย</button>
+</div>
+
+<div class="shop-row">
+<span>🥛 นม — 70 💰</span>
+<button class="buy" onclick="sellProduct('milk')">ขาย</button>
+</div>
+
+<div class="shop-row">
+<span>🧶 ขนแกะ — 90 💰</span>
+<button class="buy" onclick="sellProduct('wool')">ขาย</button>
+</div>
+
+<div class="shop-row">
+<span>🐖 หมูโตเต็มวัย — 700 💰</span>
+<button class="buy" onclick="sellAdultPigs()">ขายหมูโต</button>
+</div>
+
+<hr style="margin:15px 0">
+
+<button
+class="buy"
+style="width:100%"
+onclick="buyPlot()">
+🧱 ซื้อแปลงเพิ่ม — 100 💰
+</button>
+
+<button class="close" onclick="closePopup('shopPopup')">
+กลับฟาร์ม
+</button>
+
+</div>
+</div>
+
+
+<!-- ANIMALS POPUP -->
+
+<div class="popup" id="animalsPopup">
+
+<div class="popup-card">
+
+<h2 class="popup-title">🐄 จัดการสัตว์</h2>
+
+<div id="animalList"></div>
+
+<button class="close" onclick="closePopup('animalsPopup')">
+กลับฟาร์ม
+</button>
+
+</div>
+</div>
+
+
+<!-- INVENTORY -->
+
+<div class="popup" id="inventoryPopup">
+
+<div class="popup-card">
+
+<h2 class="popup-title">🎒 กระเป๋า</h2>
+
+<div id="inventoryList"></div>
+
+<button class="close" onclick="closePopup('inventoryPopup')">
+กลับฟาร์ม
+</button>
+
+</div>
+</div>
+
+
+<!-- MISSIONS -->
+
+<div class="popup" id="missionPopup">
+
+<div class="popup-card">
+
+<h2 class="popup-title">📜 ภารกิจ</h2>
+
+<div id="missionList"></div>
+
+<button class="close" onclick="closePopup('missionPopup')">
+กลับฟาร์ม
+</button>
+
+</div>
+</div>
+
+
+<!-- LEVEL UP -->
+
+<div class="popup" id="levelPopup">
+
+<div class="popup-card" style="text-align:center">
+
+<div style="font-size:70px">⭐</div>
+
+<h1>LEVEL UP!</h1>
+
+<h2 id="newLevel">Level 2</h2>
+
+<p style="margin-top:10px">
+🎁 ได้รับโบนัส 50 เหรียญ
+</p>
+
+<button class="close" onclick="closePopup('levelPopup')">
+เยี่ยมเลย!
+</button>
+
+</div>
+</div>
+
+
+<div id="status"></div>
+
+
+<script>
+
+/* =========================
+   PLANTS
+========================= */
+
+const plants={
+
+carrot:{
+name:"แครอท",
+icon:"🥕",
+time:15000,
+sell:20,
+seedCost:5,
+unlock:1
+},
+
+flower:{
+name:"ดอกไม้",
+icon:"🌷",
+time:12000,
+sell:25,
+seedCost:5,
+unlock:1
+},
+
+tomato:{
+name:"มะเขือเทศ",
+icon:"🍅",
+time:20000,
+sell:30,
+seedCost:10,
+unlock:5
+},
+
+apple:{
+name:"แอปเปิล",
+icon:"🍎",
+time:30000,
+sell:60,
+seedCost:20,
+unlock:10
+}
+
+};
+
+
+/* =========================
+   ANIMALS
+========================= */
+
+const animalTypes={
+
+chicken:{
+name:"ไก่",
+icon:"🐔",
+price:100,
+unlock:1,
+product:"egg",
+productName:"ไข่",
+productIcon:"🥚",
+productTime:30000,
+adultAge:3,
+sellPrice:180
+},
+
+cow:{
+name:"วัว",
+icon:"🐄",
+price:500,
+unlock:3,
+product:"milk",
+productName:"นม",
+productIcon:"🥛",
+productTime:60000,
+adultAge:5,
+sellPrice:900
+},
+
+pig:{
+name:"หมู",
+icon:"🐖",
+price:350,
+unlock:4,
+product:null,
+productName:"หมูโต",
+productIcon:"🐖",
+productTime:null,
+adultAge:7,
+sellPrice:700
+},
+
+sheep:{
+name:"แกะ",
+icon:"🐑",
+price:450,
+unlock:5,
+product:"wool",
+productName:"ขนแกะ",
+productIcon:"🧶",
+productTime:90000,
+adultAge:6,
+sellPrice:800
+}
+
+};
+
+
+/* =========================
+   GAME DATA
+========================= */
+
+let game={
+
+name:"",
+money:100,
+level:1,
+exp:0,
+nextExp:100,
+
+tool:"",
+seed:null,
+
+plots:[],
+
+feed:5,
+
+animals:[],
+animalId:1,
+
+inventory:{
+carrot_seed:4,
+flower_seed:2,
+tomato_seed:0,
+apple_seed:0,
+
+carrot:0,
+flower:0,
+tomato:0,
+apple:0,
+
+egg:0,
+milk:0,
+wool:0
+},
+
+stats:{
+plant_carrot:0,
+plant_flower:0,
+plant_tomato:0,
+plant_apple:0,
+
+water:0,
+
+harvest_carrot:0,
+harvest_flower:0,
+harvest_tomato:0,
+harvest_apple:0,
+
+animalsBought:0,
+animalsFed:0,
+productsCollected:0,
+plots:4
+},
+
+missions:[
+
+{
+id:1,
+text:"ปลูกแครอท 2 ต้น",
+target:2,
+key:"plant_carrot",
+reward:50,
+done:false,
+claimed:false
+},
+
+{
+id:2,
+text:"รดน้ำ 10 ครั้ง",
+target:10,
+key:"water",
+reward:100,
+done:false,
+claimed:false
+},
+
+{
+id:3,
+text:"ซื้อสัตว์ 1 ตัว",
+target:1,
+key:"animalsBought",
+reward:100,
+done:false,
+claimed:false
+},
+
+{
+id:4,
+text:"ให้อาหารสัตว์ 10 ครั้ง",
+target:10,
+key:"animalsFed",
+reward:150,
+done:false,
+claimed:false
+},
+
+{
+id:5,
+text:"เก็บผลผลิตจากสัตว์ 5 ครั้ง",
+target:5,
+key:"productsCollected",
+reward:200,
+done:false,
+claimed:false
+},
+
+{
+id:6,
+text:"ถึง Level 5",
+target:5,
+key:"level",
+reward:300,
+done:false,
+claimed:false
+}
+
+]
+
+};
+
+
+/* =========================
+   START
+========================= */
+
+function startGame(){
+
+let name=document
+.getElementById("nameInput")
+.value.trim();
+
+if(!name){
+
+alert("กรุณาใส่ชื่อก่อนเริ่มเกม");
+return;
+
+}
+
+game.name=name;
+
+if(game.plots.length===0){
+
+for(let i=0;i<4;i++){
+
+game.plots.push({
+state:"empty",
+type:null,
+plantedAt:0,
+watered:0
+});
+
+}
+
+}
+
+document.getElementById("playerName")
+.innerText=name;
+
+document.getElementById("startScreen")
+.style.display="none";
+
+document.getElementById("game")
+.style.display="block";
+
+render();
+renderAnimals();
+updateUI();
+
+showStatus("🌱 ยินดีต้อนรับสู่ฟาร์ม!");
+
+}
+
+
+/* =========================
+   PLANTS
+========================= */
+
+function render(){
+
+const farm=document.getElementById("farm");
+
+farm.innerHTML="";
+
+game.plots.forEach((plot,index)=>{
+
+let div=document.createElement("div");
+
+div.className="plot";
+div.id="plot-"+index;
+div.onclick=()=>clickPlot(index);
+
+farm.appendChild(div);
+
+drawPlot(index);
+
+});
+
+}
+
+
+function drawPlot(index){
+
+const plot=game.plots[index];
+
+const div=document.getElementById("plot-"+index);
+
+if(!div)return;
+
+div.classList.remove("empty");
+
+if(plot.state==="empty"){
+
+div.innerHTML="🟫";
+div.classList.add("empty");
+return;
+
+}
+
+const plant=plants[plot.type];
+
+if(plot.state==="ready"){
+
+div.innerHTML=`
+<div class="grow-time">
+<div class="grow-fill" style="width:100%"></div>
+</div>
+${plant.icon}`;
+
+return;
+
+}
+
+let elapsed=Date.now()-plot.plantedAt;
+
+let progress=Math.min(
+elapsed/plant.time,
+1
+);
+
+let stage;
+
+if(progress<.33) stage="🌱";
+else if(progress<.66) stage="🌿";
+else stage="🌳";
+
+div.innerHTML=`
+<div class="grow-time">
+<div class="grow-fill"
+style="width:${progress*100}%">
+</div>
+</div>
+${stage}`;
+
+}
+
+
+/* =========================
+   PLANT TOOLS
+========================= */
+
+function choosePlant(){
+
+game.tool="plant";
+
+document.getElementById("seedMenu")
+.style.display="block";
+
+}
+
+
+function selectSeed(type){
+
+if(game.level<plants[type].unlock){
+
+showStatus(
+"🔒 ต้อง Level "+
+plants[type].unlock+
+" ก่อน"
+);
+
+return;
+
+}
+
+game.seed=type;
+
+closeSeedMenu();
+
+showStatus(
+"🌱 เลือก "+
+plants[type].name+
+" แล้วคลิกแปลง"
+);
+
+}
+
+
+function chooseTool(tool){
+
+game.tool=tool;
+game.seed=null;
+
+closeSeedMenu();
+
+if(tool==="water")
+showStatus("💧 คลิกแปลงเพื่อรดน้ำ");
+
+if(tool==="harvest")
+showStatus("🧺 คลิกพืชที่พร้อมเก็บ");
+
+}
+
+
+function clickPlot(index){
+
+const plot=game.plots[index];
+
+
+/* PLANT */
+
+if(game.tool==="plant"){
+
+if(!game.seed){
+
+showStatus("🌱 กรุณาเลือกเมล็ด");
+return;
+
+}
+
+if(plot.state!=="empty"){
+
+showStatus("❌ แปลงไม่ว่าง");
+return;
+
+}
+
+let key=game.seed+"_seed";
+
+if(game.inventory[key]<=0){
+
+showStatus("❌ เมล็ดหมด");
+return;
+
+}
+
+game.inventory[key]--;
+
+plot.state="growing";
+plot.type=game.seed;
+plot.plantedAt=Date.now();
+plot.watered=0;
+
+game.stats["plant_"+game.seed]++;
+
+addExp(5);
+
+game.seed=null;
+
+render();
+updateUI();
+checkMissions();
+save();
+
+showStatus("🌱 ปลูกสำเร็จ!");
+
+return;
+
+}
+
+
+/* WATER */
+
+if(game.tool==="water"){
+
+if(plot.state!=="growing"){
+
+showStatus("💧 แปลงนี้ไม่ต้องรดน้ำ");
+return;
+
+}
+
+if(plot.watered>=3){
+
+showStatus("💦 รดน้ำครบแล้ว");
+return;
+
+}
+
+plot.watered++;
+
+game.stats.water++;
+
+addExp(2);
+
+if(plot.watered===3)
+showStatus("💧 รดน้ำครบ 3/3");
+else
+showStatus(
+"💧 รดน้ำ "+
+plot.watered+"/3"
+);
+
+updateUI();
+checkMissions();
+save();
+
+return;
+
+}
+
+
+/* HARVEST */
+
+if(game.tool==="harvest"){
+
+if(plot.state!=="ready"){
+
+showStatus("⏳ ยังไม่พร้อมเก็บ");
+return;
+
+}
+
+let type=plot.type;
+
+game.inventory[type]++;
+
+game.stats["harvest_"+type]++;
+
+addExp(10);
+
+plot.state="empty";
+plot.type=null;
+plot.plantedAt=0;
+plot.watered=0;
+
+render();
+updateUI();
+checkMissions();
+save();
+
+showStatus(
+"🧺 เก็บ"+
+plants[type].name+
+"สำเร็จ!"
+);
+
+}
+
+}
+
+
+/* =========================
+   ANIMAL PURCHASE
+========================= */
+
+function buyAnimal(type){
+
+const a=animalTypes[type];
+
+if(game.level<a.unlock){
+
+showStatus(
+"🔒 ต้อง Level "+
+a.unlock+
+" ก่อน"
+);
+
+return;
+
+}
+
+if(game.money<a.price){
+
+showStatus("💰 เงินไม่พอ");
+return;
+
+}
+
+/* จำกัดจำนวนสัตว์ตามจำนวนคอก */
+
+let capacity=
+4+Math.floor(game.level/3)*2;
+
+if(game.animals.length>=capacity){
+
+showStatus(
+"🏠 คอกเต็ม! เพิ่ม Level เพื่อเพิ่มความจุ"
+);
+
+return;
+
+}
+
+game.money-=a.price;
+
+let now=Date.now();
+
+game.animals.push({
+
+id:game.animalId++,
+type:type,
+
+bornAt:now,
+lastUpdate:now,
+
+hunger:100,
+health:100,
+happiness:80,
+cleanliness:100,
+
+lastFed:now,
+lastClean:now,
+
+productProgress:0,
+productReady:false,
+sold:false
+
+});
+
+game.stats.animalsBought++;
+
+addExp(10);
+
+renderAnimals();
+updateUI();
+checkMissions();
+save();
+
+showStatus(
+a.icon+
+" ซื้อ"+
+a.name+
+"สำเร็จ!"
+);
+
+}
+
+
+/* =========================
+   ANIMAL TIME
+========================= */
+
+function updateAnimals(){
+
+const now=Date.now();
+
+game.animals.forEach(a=>{
+
+let dt=Math.max(
+0,
+(now-a.lastUpdate)/1000
+);
+
+a.lastUpdate=now;
+
+
+/* HUNGER */
+
+a.hunger-=dt*0.12;
+
+if(a.hunger<0)
+a.hunger=0;
+
+
+/* CLEAN */
+
+a.cleanliness-=dt*0.035;
+
+if(a.cleanliness<0)
+a.cleanliness=0;
+
+
+/* HEALTH */
+
+if(a.hunger<20 || a.cleanliness<20){
+
+a.health-=dt*0.025;
+
+}else if(
+a.hunger>70 &&
+a.cleanliness>70
+){
+
+a.health+=dt*0.01;
+
+}
+
+a.health=Math.max(
+0,
+Math.min(100,a.health)
+);
+
+
+/* HAPPINESS */
+
+if(
+a.hunger>60 &&
+a.cleanliness>60 &&
+a.health>70
+){
+
+a.happiness+=dt*0.012;
+
+}else{
+
+a.happiness-=dt*0.015;
+
+}
+
+a.happiness=Math.max(
+0,
+Math.min(100,a.happiness)
+);
+
+
+/* PRODUCT */
+
+const type=animalTypes[a.type];
+
+if(type.product){
+
+let productionRate=dt;
+
+if(a.health<50)
+productionRate*=0.5;
+
+if(a.happiness<40)
+productionRate*=0.6;
+
+if(a.hunger<30)
+productionRate*=0.4;
+
+a.productProgress+=productionRate;
+
+if(
+a.productProgress>=type.productTime/1000
+){
+
+a.productProgress=
+type.productTime/1000;
+
+a.productReady=true;
+
+}
+
+}
+
+});
+
+}
+
+
+/* =========================
+   FEED ANIMAL
+========================= */
+
+function feedAnimal(id){
+
+if(game.feed<=0){
+
+showStatus("🌾 อาหารสัตว์หมด");
+return;
+
+}
+
+let a=
+game.animals.find(x=>x.id===id);
+
+if(!a)return;
+
+if(a.hunger>=95){
+
+showStatus("😊 สัตว์ตัวนี้อิ่มแล้ว");
+return;
+
+}
+
+game.feed--;
+
+a.hunger=Math.min(
+100,
+a.hunger+40
+);
+
+a.happiness=Math.min(
+100,
+a.happiness+8
+);
+
+game.stats.animalsFed++;
+
+addExp(3);
+
+renderAnimals();
+updateUI();
+checkMissions();
+save();
+
+showStatus(
+"🌾 ให้อาหาร "+
+animalTypes[a.type].name+
+" แล้ว"
+);
+
+}
+
+
+/* =========================
+   FEED ALL
+========================= */
+
+function feedAll(){
+
+let fed=0;
+
+game.animals.forEach(a=>{
+
+if(
+game.feed>0 &&
+a.hunger<95
+){
+
+game.feed--;
+
+a.hunger=Math.min(
+100,
+a.hunger+40
+);
+
+a.happiness=Math.min(
+100,
+a.happiness+8
+);
+
+game.stats.animalsFed++;
+
+fed++;
+
+}
+
+});
+
+if(fed>0){
+
+addExp(fed*3);
+
+renderAnimals();
+updateUI();
+checkMissions();
+save();
+
+showStatus(
+"🌾 ให้อาหารสัตว์ "+fed+" ตัว"
+);
+
+}else{
+
+showStatus(
+"🌾 ไม่มีสัตว์ที่ต้องการอาหาร"
+);
+
+}
+
+}
+
+
+/* =========================
+   CLEAN
+========================= */
+
+function cleanAnimal(id){
+
+let a=
+game.animals.find(x=>x.id===id);
+
+if(!a)return;
+
+a.cleanliness=100;
+a.health=Math.min(
+100,
+a.health+3
+);
+a.happiness=Math.min(
+100,
+a.happiness+5
+);
+
+addExp(2);
+
+renderAnimals();
+updateUI();
+save();
+
+showStatus(
+"🧼 ทำความสะอาด "+
+animalTypes[a.type].name+
+" แล้ว"
+);
+
+}
+
+
+/* =========================
+   COLLECT
+========================= */
+
+function collectAnimalProduct(id){
+
+let a=
+game.animals.find(x=>x.id===id);
+
+if(!a)return;
+
+const type=animalTypes[a.type];
+
+if(!type.product){
+
+showStatus(
+"🐖 หมูไม่มีผลผลิต ต้องโตแล้วจึงขายได้"
+);
+
+return;
+
+}
+
+if(!a.productReady){
+
+showStatus(
+"⏳ ยังไม่มีผลผลิต"
+);
+
+return;
+
+}
+
+game.inventory[type.product]++;
+
+game.stats.productsCollected++;
+
+a.productReady=false;
+a.productProgress=0;
+
+addExp(8);
+
+renderAnimals();
+updateUI();
+checkMissions();
+save();
+
+showStatus(
+type.productIcon+
+" เก็บ"+
+type.productName+
+"แล้ว!"
+);
+
+}
+
+
+/* =========================
+   SELL PIG
+========================= */
+
+function sellAdultPigs(){
+
+let index=
+game.animals.findIndex(a=>{
+
+let age=
+(Date.now()-a.bornAt)/
+86400000;
+
+return(
+a.type==="pig" &&
+age>=animalTypes.pig.adultAge
+);
+
+});
+
+if(index===-1){
+
+showStatus(
+"🐖 ยังไม่มีหมูโตเต็มวัย"
+);
+
+return;
+
+}
+
+let pig=game.animals[index];
+
+let price=
+animalTypes.pig.sellPrice;
+
+game.money+=price;
+
+game.animals.splice(index,1);
+
+addExp(15);
+
+renderAnimals();
+updateUI();
+save();
+
+showStatus(
+"💰 ขายหมูโต +"+
+price+
+" เหรียญ"
+);
+
+}
+
+
+/* =========================
+   ANIMAL UI
+========================= */
+
+function renderAnimals(){
+
+const grid=
+document.getElementById("animalGrid");
+
+grid.innerHTML="";
+
+if(game.animals.length===0){
+
+grid.innerHTML=`
+<div style="
+grid-column:1/-1;
+background:rgba(255,255,255,.9);
+padding:25px;
+border-radius:20px;
+text-align:center">
+🐾 ยังไม่มีสัตว์<br>
+ไปที่ 🏪 ร้านค้า เพื่อซื้อสัตว์
+</div>`;
+
+return;
+
+}
+
+game.animals.forEach(a=>{
+
+const type=animalTypes[a.type];
+
+let ageDays=
+(Date.now()-a.bornAt)/
+86400000;
+
+let ageText=
+ageDays<1
+?
+Math.floor(ageDays*24)+" ชั่วโมง"
+:
+ageDays.toFixed(1)+" วัน";
+
+let productText="";
+
+if(type.product){
+
+if(a.productReady){
+
+productText=
+"✨ "+type.productName+"พร้อมเก็บ!";
+
+}else{
+
+let total=
+type.productTime/1000;
+
+let percent=
+Math.min(
+100,
+a.productProgress/total*100
+);
+
+productText=
+"⏱️ ผลผลิต "+percent.toFixed(0)+"%";
+
+}
+
+}else{
+
+let adult=
+animalTypes[a.type].adultAge;
+
+if(ageDays>=adult)
+productText="🐖 โตเต็มวัย พร้อมขาย";
+else
+productText=
+"🌱 โต "+ageDays.toFixed(1)+
+"/"+adult+" วัน";
+
+}
+
+let card=document.createElement("div");
+
+card.className="animal-card";
+
+card.innerHTML=`
+
+<div class="animal-head">
+
+<div class="animal-icon">
+${type.icon}
+</div>
+
+<div>
+
+<div class="animal-name">
+${type.name}
+</div>
+
+<div class="animal-id">
+หมายเลข #${String(a.id).padStart(3,"0")}
+</div>
+
+</div>
+
+</div>
+
+<div class="stat">
+
+<div class="stat-line">
+<span>🍖 ความอิ่ม</span>
+<b>${Math.round(a.hunger)}%</b>
+</div>
+
+<div class="stat-bar">
+<div class="stat-fill hunger"
+style="width:${a.hunger}%"></div>
+</div>
+
+</div>
+
+<div class="stat">
+
+<div class="stat-line">
+<span>❤️ สุขภาพ</span>
+<b>${Math.round(a.health)}%</b>
+</div>
+
+<div class="stat-bar">
+<div class="stat-fill health"
+style="width:${a.health}%"></div>
+</div>
+
+</div>
+
+<div class="stat">
+
+<div class="stat-line">
+<span>😊 ความสุข</span>
+<b>${Math.round(a.happiness)}%</b>
+</div>
+
+<div class="stat-bar">
+<div class="stat-fill happy"
+style="width:${a.happiness}%"></div>
+</div>
+
+</div>
+
+<div class="stat">
+
+<div class="stat-line">
+<span>🧼 ความสะอาด</span>
+<b>${Math.round(a.cleanliness)}%</b>
+</div>
+
+<div class="stat-bar">
+<div class="stat-fill clean"
+style="width:${a.cleanliness}%"></div>
+</div>
+
+</div>
+
+<div class="animal-status">
+
+🎂 อายุ ${ageText}<br>
+${productText}
+
+</div>
+
+<div class="animal-actions">
+
+<button
+class="feed-btn"
+onclick="feedAnimal(${a.id})">
+🌾 ให้อาหาร
+</button>
+
+<button
+class="clean-btn"
+onclick="cleanAnimal(${a.id})">
+🧼 ทำความสะอาด
+</button>
+
+${
+type.product
+?
+`<button
+class="collect-btn"
+style="grid-column:1/-1"
+onclick="collectAnimalProduct(${a.id})">
+${type.productIcon}
+เก็บ${type.productName}
+</button>`
+:
+""
+}
+
+</div>
+`;
+
+grid.appendChild(card);
+
+});
+
+}
+
+
+function openAnimals(){
+
+renderAnimals();
+
+openPopup("animalsPopup");
+
+}
+
+
+/* =========================
+   SHOP
+========================= */
+
+function buyFeed(){
+
+if(game.money<25){
+
+showStatus("💰 เงินไม่พอ");
+return;
+
+}
+
+game.money-=25;
+
+game.feed+=5;
+
+updateUI();
+save();
+
+showStatus("🌾 ได้อาหารสัตว์ +5");
+
+}
+
+
+function buySeed(type){
+
+const plant=plants[type];
+
+if(game.level<plant.unlock){
+
+showStatus(
+"🔒 ต้อง Level "+
+plant.unlock+
+" ก่อน"
+);
+
+return;
+
+}
+
+if(game.money<plant.seedCost){
+
+showStatus("💰 เงินไม่พอ");
+return;
+
+}
+
+game.money-=plant.seedCost;
+
+game.inventory[type+"_seed"]++;
+
+updateUI();
+updateInventory();
+save();
+
+showStatus(
+"🌱 ซื้อ"+
+plant.name+
+"สำเร็จ"
+);
+
+}
+
+
+function sellProduce(type){
+
+if(game.inventory[type]<=0){
+
+showStatus("❌ ไม่มีผลผลิต");
+return;
+
+}
+
+game.inventory[type]--;
+game.money+=plants[type].sell;
+
+updateUI();
+updateInventory();
+save();
+
+showStatus(
+"💰 ขาย"+
+plants[type].name+
+"สำเร็จ"
+);
+
+}
+
+
+function sellProduct(type){
+
+if(game.inventory[type]<=0){
+
+showStatus("❌ ไม่มีผลผลิต");
+return;
+
+}
+
+const prices={
+egg:35,
+milk:70,
+wool:90
+};
+
+game.inventory[type]--;
+game.money+=prices[type];
+
+updateUI();
+updateInventory();
+save();
+
+showStatus(
+"💰 ขายผลผลิต +"+
+prices[type]
+);
+
+}
+
+
+/* =========================
+   PLOTS
+========================= */
+
+function buyPlot(){
+
+if(game.money<100){
+
+showStatus("💰 เงินไม่พอ");
+return;
+
+}
+
+game.money-=100;
+
+game.plots.push({
+state:"empty",
+type:null,
+plantedAt:0,
+watered:0
+});
+
+game.stats.plots=
+game.plots.length;
+
+render();
+updateUI();
+checkMissions();
+save();
+
+showStatus("🧱 ได้แปลงใหม่!");
+
+}
+
+
+/* =========================
+   EXP
+========================= */
+
+function addExp(amount){
+
+game.exp+=amount;
+
+while(game.exp>=game.nextExp){
+
+game.exp-=game.nextExp;
+
+game.level++;
+
+game.money+=50;
+
+game.nextExp=
+Math.floor(game.nextExp*1.25);
+
+document.getElementById("newLevel")
+.innerText=
+"Level "+game.level;
+
+openPopup("levelPopup");
+
+}
+
+updateUI();
+checkMissions();
+
+}
+
+
+/* =========================
+   MISSIONS
+========================= */
+
+function checkMissions(){
+
+game.missions.forEach(m=>{
+
+let value=0;
+
+if(m.key==="level")
+value=game.level;
+else
+value=game.stats[m.key]||0;
+
+if(
+value>=m.target &&
+!m.done
+){
+
+m.done=true;
+
+showStatus("✨ ภารกิจสำเร็จ!");
+
+}
+
+});
+
+updateMissions();
+
+}
+
+
+function claimMission(id){
+
+let m=
+game.missions.find(x=>x.id===id);
+
+if(
+!m ||
+!m.done ||
+m.claimed
+)return;
+
+m.claimed=true;
+
+game.money+=m.reward;
+
+addExp(20);
+
+updateUI();
+updateMissions();
+save();
+
+showStatus(
+"🎁 รับรางวัล +"+
+m.reward+
+" เหรียญ"
+);
+
+}
+
+
+function openMissions(){
+
+updateMissions();
+openPopup("missionPopup");
+
+}
+
+
+function updateMissions(){
+
+const list=
+document.getElementById("missionList");
+
+if(!list)return;
+
+let html="";
+
+game.missions.forEach(m=>{
+
+let value=
+m.key==="level"
+?
+game.level
+:
+game.stats[m.key]||0;
+
+html+=`
+
+<div class="mission ${
+m.done?"completed":""
+}">
+
+<b>${m.text}</b>
+
+<div>
+ความคืบหน้า:
+${Math.min(value,m.target)}
+/
+${m.target}
+</div>
+
+<div>🎁 ${m.reward} เหรียญ</div>
+
+${
+m.done&&!m.claimed
+?
+`<button
+class="claim"
+onclick="claimMission(${m.id})">
+🎁 รับรางวัล
+</button>`
+:
+m.claimed
+?
+`<div>✅ รับแล้ว</div>`
+:
+""
+}
+
+</div>
+
+`;
+
+});
+
+list.innerHTML=html;
+
+}
+
+
+/* =========================
+   INVENTORY
+========================= */
+
+function openInventory(){
+
+updateInventory();
+openPopup("inventoryPopup");
+
+}
+
+
+function updateInventory(){
+
+const i=game.inventory;
+
+document.getElementById("inventoryList")
+.innerHTML=`
+
+<div class="inv-grid">
+
+${inventoryItem("🌾","อาหารสัตว์",game.feed)}
+
+${inventoryItem("🥕","เมล็ดแครอท",i.carrot_seed)}
+
+${inventoryItem("🌷","เมล็ดดอกไม้",i.flower_seed)}
+
+${inventoryItem("🍅","เมล็ดมะเขือเทศ",i.tomato_seed)}
+
+${inventoryItem("🍎","เมล็ดแอปเปิล",i.apple_seed)}
+
+${inventoryItem("🥕","แครอท",i.carrot)}
+
+${inventoryItem("🌷","ดอกไม้",i.flower)}
+
+${inventoryItem("🍅","มะเขือเทศ",i.tomato)}
+
+${inventoryItem("🍎","แอปเปิล",i.apple)}
+
+${inventoryItem("🥚","ไข่",i.egg)}
+
+${inventoryItem("🥛","นม",i.milk)}
+
+${inventoryItem("🧶","ขนแกะ",i.wool)}
+
+</div>
+`;
+
+}
+
+
+function inventoryItem(icon,name,count){
+
+return`
+
+<div class="inv">
+
+<div class="inv-icon">${icon}</div>
+
+<b>${name}</b>
+
+<div>จำนวน ${count}</div>
+
+</div>
+
+`;
+
+}
+
+
+/* =========================
+   POPUP
+========================= */
+
+function openPopup(id){
+
+document.getElementById(id)
+.style.display="flex";
+
+}
+
+
+function closePopup(id){
+
+document.getElementById(id)
+.style.display="none";
+
+}
+
+
+function closeSeedMenu(){
+
+document.getElementById("seedMenu")
+.style.display="none";
+
+}
+
+
+/* =========================
+   STATUS
+========================= */
+
+let statusTimer;
+
+function showStatus(text){
+
+let el=
+document.getElementById("status");
+
+el.innerText=text;
+el.style.display="block";
+
+clearTimeout(statusTimer);
+
+statusTimer=
+setTimeout(()=>{
+el.style.display="none";
+},2500);
+
+}
+
+
+/* =========================
+   SAVE
+========================= */
+
+function save(){
+
+try{
+
+localStorage.setItem(
+"miniFarmAnimalSave",
+JSON.stringify(game)
+);
+
+}catch(e){}
+
+}
+
+
+/* =========================
+   LOAD
+========================= */
+
+function load(){
+
+try{
+
+let data=
+localStorage.getItem(
+"miniFarmAnimalSave"
+);
+
+if(data){
+
+let saved=
+JSON.parse(data);
+
+game=saved;
+
+}
+
+}catch(e){
+
+console.log("โหลดเซฟไม่สำเร็จ");
+
+}
+
+}
+
+
+/* =========================
+   GAME LOOP
+========================= */
+
+setInterval(()=>{
+
+if(
+document.getElementById("game")
+.style.display!=="none"
+){
+
+updateAnimals();
+
+updateGrowth();
+
+renderAnimals();
+
+render();
+
+updateUI();
+
+save();
+
+}
+
+},1000);
+
+
+/* =========================
+   GROWTH
+========================= */
+
+function updateGrowth(){
+
+game.plots.forEach((plot,index)=>{
+
+if(plot.state!=="growing")
+return;
+
+const plant=plants[plot.type];
+
+let elapsed=
+Date.now()-plot.plantedAt;
+
+if(
+elapsed>=plant.time &&
+plot.watered>=3
+){
+
+plot.state="ready";
+
+showStatus(
+"✨ "+
+plant.name+
+"พร้อมเก็บเกี่ยว!"
+);
+
+}
+
+});
+
+}
+
+
+/* =========================
+   UI
+========================= */
+
+function updateUI(){
+
+document.getElementById("money")
+.innerText=game.money;
+
+document.getElementById("levelText")
+.innerText="Level "+game.level;
+
+let percent=
+game.exp/game.nextExp*100;
+
+document.getElementById("expFill")
+.style.width=percent+"%";
+
+document.getElementById("expText")
+.innerText=
+game.exp+
+" / "+
+game.nextExp+
+" EXP";
+
+}
+
+load();
+
+</script>
+
+</body>
+</html>
