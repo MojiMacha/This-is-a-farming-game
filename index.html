@@ -93,6 +93,34 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .animal-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
 .animal-actions button{padding:8px;border-radius:10px;color:#fff;font-weight:900}.feed-btn{background:#8d6e63}.clean-btn{background:#00897b}.collect-btn{background:#ef6c00}
 
+
+/* LIVING 3D ANIMAL PEN */
+.animal-section{background:rgba(255,255,255,.16)}
+.animal-world-wrap{
+  position:relative;width:100%;height:560px;overflow:hidden;border-radius:30px;
+  background:linear-gradient(#8ed8ff 0%,#d9f5ff 42%,#8bc66a 43%,#6eae54 100%);
+  border:5px solid rgba(255,255,255,.75);
+  box-shadow:0 18px 45px #0004,inset 0 0 0 2px #0001;
+}
+.animal-world{position:absolute;inset:0}
+.animal-world canvas{display:block;width:100%;height:100%;touch-action:none}
+.pen-hud{
+  position:absolute;left:14px;right:14px;bottom:14px;display:flex;gap:8px;justify-content:center;
+  flex-wrap:wrap;pointer-events:none
+}
+.pen-hud span{
+  padding:8px 12px;border-radius:14px;background:#ffffffdc;backdrop-filter:blur(8px);
+  box-shadow:0 5px 15px #0002;font-size:12px;font-weight:800
+}
+.animal-card.selected{border-color:#43a047;box-shadow:0 0 0 3px #81c784,0 10px 28px #0003}
+@media(max-width:700px){
+  .animal-world-wrap{height:430px;border-radius:24px}
+}
+@media(max-width:520px){
+  .animal-world-wrap{height:360px;border-width:3px}
+  .pen-hud span{font-size:10px;padding:7px 9px}
+}
+
 /* POPUPS */
 .popup{display:none;position:fixed;inset:0;background:#0009;z-index:200;justify-content:center;align-items:center;padding:15px}
 .popup-card{width:min(650px,100%);max-height:90vh;overflow:auto;background:#fff;border-radius:25px;padding:22px;box-shadow:0 20px 70px #0007}
@@ -134,7 +162,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
   <input id="nameInput" placeholder="ชื่อชาวสวน" maxlength="20">
   <button id="startButton" onclick="startGame()">🚜 เริ่มทำฟาร์ม</button>
   <div class="start-features">
-   <div>🐄 สัตว์ 3D</div><div>💾 เซฟอัตโนมัติ</div><div>🏆 ภารกิจ + เลเวล</div>
+   <div>🐄 คอกสัตว์มีชีวิต</div><div>💾 เซฟอัตโนมัติ</div><div>🏆 ภารกิจ + เลเวล</div>
   </div>
  </div>
 </div>
@@ -168,7 +196,18 @@ button:disabled{opacity:.45;cursor:not-allowed}
 </div>
 
 <div class="section"><h2 class="section-title">🌱 แปลงปลูก</h2><div class="farm" id="farm"></div></div>
-<div class="section"><h2 class="section-title">🐄 ฟาร์มสัตว์ 3D</h2><div class="animal-grid" id="animalGrid"></div></div>
+<div class="section animal-section">
+  <h2 class="section-title">🐄 คอกสัตว์ 3D แบบมีชีวิต</h2>
+  <div class="animal-world-wrap">
+    <div id="animalWorld" class="animal-world"></div>
+    <div class="pen-hud">
+      <span>🐾 <b id="penAnimalCount">0</b> ตัว</span>
+      <span>🖱️ คลิกสัตว์เพื่อดูข้อมูล</span>
+      <span id="selectedAnimalText">กำลังเดินเล่นในคอก</span>
+    </div>
+  </div>
+  <div class="animal-grid" id="animalGrid"></div>
+</div>
 </div>
 
 <div class="popup" id="seedPopup"><div class="popup-card"><h2 class="popup-title">🌱 เลือกเมล็ด</h2><div class="seed-grid">
@@ -280,7 +319,14 @@ function buyAnimal(type){
  if(game.money<a.price){showStatus("💰 เงินไม่พอ");return}
  const cap=4+Math.floor(game.level/3)*2;if(game.animals.length>=cap){showStatus("🏠 คอกเต็ม · เพิ่ม Level");return}
  game.money-=a.price;const now=Date.now();
- game.animals.push({id:game.animalId++,type,bornAt:now,lastUpdate:now,hunger:100,health:100,happiness:85,cleanliness:100,productProgress:0,productReady:false});
+ game.animals.push({
+    id:game.animalId++,type,bornAt:now,lastUpdate:now,hunger:100,health:100,happiness:85,
+    cleanliness:100,productProgress:0,productReady:false,
+    x:(Math.random()-.5)*10,z:(Math.random()-.5)*6,
+    targetX:(Math.random()-.5)*10,targetZ:(Math.random()-.5)*6,
+    angle:Math.random()*Math.PI*2,speed:.65+Math.random()*.35,
+    pauseUntil:now+Math.random()*2500,legPhase:Math.random()*Math.PI*2
+  });
  game.stats.animalsBought++;addExp(10);save();renderAll();renderShop();showStatus(a.icon+" ได้สมาชิกใหม่: "+a.name)
 }
 function buyFeed(){if(game.money<25){showStatus("💰 เงินไม่พอ");return}game.money-=25;game.feed+=5;save();renderAll();renderShop();showStatus("🌾 อาหาร +5")}
@@ -290,10 +336,14 @@ function buyPlot(){if(game.money<100){showStatus("💰 เงินไม่พ�
 function feedAnimal(id){
  if(game.feed<=0){showStatus("🌾 อาหารหมด");return}
  const a=game.animals.find(x=>x.id===id);if(!a)return;if(a.hunger>=95){showStatus("😊 ตัวนี้อิ่มแล้ว");return}
- game.feed--;a.hunger=Math.min(100,a.hunger+40);a.happiness=Math.min(100,a.happiness+8);game.stats.animalsFed++;addExp(3);save();renderAll();showStatus("🌾 ให้อาหาร "+animalTypes[a.type].name)
+ game.feed--;a.hunger=Math.min(100,a.hunger+40);a.happiness=Math.min(100,a.happiness+8);
+  a.targetX=7+(Math.random()-.5)*1.5;a.targetZ=-4.5+(Math.random()-.5)*1.2;a.pauseUntil=Date.now();
+  game.stats.animalsFed++;addExp(3);save();renderAll();showStatus("🌾 ให้อาหาร "+animalTypes[a.type].name)
 }
 function feedAll(){
- let n=0;game.animals.forEach(a=>{if(game.feed>0&&a.hunger<95){game.feed--;a.hunger=Math.min(100,a.hunger+40);a.happiness=Math.min(100,a.happiness+8);game.stats.animalsFed++;n++}});
+ let n=0;game.animals.forEach(a=>{if(game.feed>0&&a.hunger<95){game.feed--;a.hunger=Math.min(100,a.hunger+40);a.happiness=Math.min(100,a.happiness+8);
+    a.targetX=7+(Math.random()-.5)*1.5;a.targetZ=-4.5+(Math.random()-.5)*1.2;a.pauseUntil=Date.now();
+    game.stats.animalsFed++;n++}});
  if(n)addExp(n*3);save();renderAll();showStatus(n?`🌾 ให้อาหาร ${n} ตัว`:"😊 สัตว์ทุกตัวอิ่มแล้ว")
 }
 function cleanAnimal(id){const a=game.animals.find(x=>x.id===id);if(!a)return;a.cleanliness=100;a.health=Math.min(100,a.health+3);a.happiness=Math.min(100,a.happiness+5);addExp(2);save();renderAll();showStatus("🧼 ทำความสะอาด "+animalTypes[a.type].name)}
@@ -339,51 +389,364 @@ function dailyReward(){
  if(game.lastDaily===today){showStatus("🎁 วันนี้รับโบนัสไปแล้ว");return}
  game.lastDaily=today;game.money+=100;game.feed+=2;addExp(15);save();renderAll();toast("🎁 โบนัสวันนี้ +100 💰 +2 🌾")
 }
-function renderAll(){renderFarm();renderAnimals();renderShop();updateInventory();updateUI();checkMissions()}
+function renderAll(){
+  renderFarm();
+  renderAnimals();
+  renderShop();
+  updateInventory();
+  updateUI();
+  checkMissions();
+}
+
 function renderFarm(){
- const el=document.getElementById("farm");el.innerHTML="";
- game.plots.forEach((p,i)=>{const d=document.createElement("div");d.className="plot "+(p.state==="empty"?"empty":"")+(p.state==="ready"?" ready":"");d.onclick=()=>clickPlot(i);
-  if(p.state==="empty")d.innerHTML="🟫";
-  else{const t=plants[p.type],pr=p.state==="ready"?1:Math.min(1,(Date.now()-p.plantedAt)/t.time),stage=pr<.33?"🌱":pr<.66?"🌿":"🌳";d.innerHTML=`<div class="grow-time"><div class="grow-fill" style="width:${pr*100}%"></div></div><div>${p.state==="ready"?t.icon:stage}</div><div class="plot-label">${t.name} · 💧 ${p.watered}/3</div>`}
-  el.appendChild(d)
- })
+  const el=document.getElementById("farm");el.innerHTML="";
+  game.plots.forEach((p,i)=>{
+    const d=document.createElement("div");
+    d.className="plot "+(p.state==="empty"?"empty":"")+(p.state==="ready"?" ready":"");
+    d.onclick=()=>clickPlot(i);
+    if(p.state==="empty")d.innerHTML="🟫";
+    else{
+      const t=plants[p.type],pr=p.state==="ready"?1:Math.min(1,(Date.now()-p.plantedAt)/t.time),
+            stage=pr<.33?"🌱":pr<.66?"🌿":"🌳";
+      d.innerHTML=`<div class="grow-time"><div class="grow-fill" style="width:${pr*100}%"></div></div><div>${p.state==="ready"?t.icon:stage}</div><div class="plot-label">${t.name} · 💧 ${p.watered}/3</div>`;
+    }
+    el.appendChild(d);
+  });
 }
+
+function ensureAnimalMotion(a){
+  if(typeof a.x!=="number")a.x=(Math.random()-.5)*10;
+  if(typeof a.z!=="number")a.z=(Math.random()-.5)*6;
+  if(typeof a.targetX!=="number")a.targetX=(Math.random()-.5)*10;
+  if(typeof a.targetZ!=="number")a.targetZ=(Math.random()-.5)*6;
+  if(typeof a.angle!=="number")a.angle=Math.random()*Math.PI*2;
+  if(typeof a.speed!=="number")a.speed=.65+Math.random()*.35;
+  if(typeof a.pauseUntil!=="number")a.pauseUntil=Date.now()+Math.random()*1500;
+  if(typeof a.legPhase!=="number")a.legPhase=Math.random()*Math.PI*2;
+}
+
 function renderAnimals(){
- const grid=document.getElementById("animalGrid");grid.innerHTML="";
- if(!game.animals.length){grid.innerHTML='<div style="grid-column:1/-1;background:#fff;padding:25px;border-radius:20px;text-align:center">🐾 ยังไม่มีสัตว์ · ไปที่ร้านค้าเพื่อซื้อ</div>';return}
- game.animals.forEach(a=>{const t=animalTypes[a.type],age=(Date.now()-a.bornAt)/86400000,total=t.productTime? t.productTime/1000:0,pc=t.product?Math.min(100,a.productProgress/total*100):0;
-  const card=document.createElement("div");card.className="animal-card";card.innerHTML=`<div class="animal-head"><div class="animal-3d" id="animal3d-${a.id}"></div><div><div class="animal-name">${t.icon} ${t.name}</div><div class="animal-id">#${String(a.id).padStart(3,"0")}</div><div style="font-size:11px;margin-top:5px">อายุ ${age<1?Math.floor(age*24)+" ชม.":age.toFixed(1)+" วัน"}</div></div></div>
-  ${bar("🍖","ความอิ่ม",a.hunger,"hunger")}${bar("❤️","สุขภาพ",a.health,"health")}${bar("😊","ความสุข",a.happiness,"happy")}${bar("🧼","ความสะอาด",a.cleanliness,"clean")}
-  <div class="animal-status">${t.product?(a.productReady?"✨ "+t.productName+" พร้อมเก็บ!":"⏱️ ผลผลิต "+pc.toFixed(0)+"%"):(age>=t.adultAge?"🐖 โตเต็มวัย · พร้อมขาย":"🌱 โต "+age.toFixed(1)+"/"+t.adultAge+" วัน")}</div>
-  <div class="animal-actions"><button class="feed-btn" onclick="feedAnimal(${a.id})">🌾 ให้อาหาร</button><button class="clean-btn" onclick="cleanAnimal(${a.id})">🧼 ล้าง</button>
-  ${t.product?`<button class="collect-btn" style="grid-column:1/-1" onclick="collectAnimalProduct(${a.id})">${t.productIcon} เก็บ${t.productName}</button>`:""}
-  ${a.type==="pig"?`<button style="grid-column:1/-1;background:#9e9e9e" onclick="sellAdultPig(${a.id})">💰 ขายหมูโต 700</button>`:""}</div>`;
-  grid.appendChild(card);setTimeout(()=>mount3D(a.id,a.type),0);
- })
- document.getElementById("animalCount").textContent=game.animals.length
+  const grid=document.getElementById("animalGrid");
+  grid.innerHTML="";
+  document.getElementById("animalCount").textContent=game.animals.length;
+  document.getElementById("penAnimalCount").textContent=game.animals.length;
+
+  if(!game.animals.length){
+    grid.innerHTML='<div style="grid-column:1/-1;background:#fff;padding:25px;border-radius:20px;text-align:center">🐾 คอกยังว่าง · ไปที่ร้านค้าเพื่อซื้อสัตว์</div>';
+  }else{
+    game.animals.forEach(a=>{
+      ensureAnimalMotion(a);
+      const t=animalTypes[a.type],
+            age=(Date.now()-a.bornAt)/86400000,
+            total=t.productTime?t.productTime/1000:0,
+            pc=t.product?Math.min(100,a.productProgress/total*100):0;
+      const card=document.createElement("div");
+      card.className="animal-card";
+      card.dataset.animalId=a.id;
+      card.innerHTML=`<div class="animal-head">
+        <div style="font-size:52px;width:74px;text-align:center">${t.icon}</div>
+        <div><div class="animal-name">${t.name}</div><div class="animal-id">#${String(a.id).padStart(3,"0")}</div>
+        <div style="font-size:11px;margin-top:5px">อายุ ${age<1?Math.floor(age*24)+" ชม.":age.toFixed(1)+" วัน"}</div></div>
+      </div>
+      ${bar("🍖","ความอิ่ม",a.hunger,"hunger")}
+      ${bar("❤️","สุขภาพ",a.health,"health")}
+      ${bar("😊","ความสุข",a.happiness,"happy")}
+      ${bar("🧼","ความสะอาด",a.cleanliness,"clean")}
+      <div class="animal-status">${t.product?(a.productReady?"✨ "+t.productName+" พร้อมเก็บ!":"⏱️ ผลผลิต "+pc.toFixed(0)+"%"):(age>=t.adultAge?"🐖 โตเต็มวัย · พร้อมขาย":"🌱 โต "+age.toFixed(1)+"/"+t.adultAge+" วัน")}</div>
+      <div class="animal-actions">
+        <button class="feed-btn" onclick="feedAnimal(${a.id})">🌾 ให้อาหาร</button>
+        <button class="clean-btn" onclick="cleanAnimal(${a.id})">🧼 ล้าง</button>
+        ${t.product?`<button class="collect-btn" style="grid-column:1/-1" onclick="collectAnimalProduct(${a.id})">${t.productIcon} เก็บ${t.productName}</button>`:""}
+        ${a.type==="pig"?`<button style="grid-column:1/-1;background:#9e9e9e" onclick="sellAdultPig(${a.id})">💰 ขายหมูโต 700</button>`:""}
+      </div>`;
+      grid.appendChild(card);
+    });
+  }
+  initAnimalWorld();
 }
-function bar(icon,name,v,cls){return `<div class="stat"><div class="stat-line"><span>${icon} ${name}</span><b>${Math.round(v)}%</b></div><div class="stat-bar"><div class="stat-fill ${cls}" style="width:${v}%"></div></div></div>`}
-function mount3D(id,type){
- const host=document.getElementById("animal3d-"+id);if(!host||!window.THREE)return;
- if(scenes.has(id)){scenes.get(id).renderer.dispose();scenes.delete(id)}
- const w=host.clientWidth,h=host.clientHeight,scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(28,w/h,.1,100);camera.position.set(0,1.6,5.5);
- const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(w,h);host.appendChild(renderer.domElement);
- scene.add(new THREE.HemisphereLight(0xffffff,0x88aa66,2.5));const light=new THREE.DirectionalLight(0xffffff,2);light.position.set(3,5,4);scene.add(light);
- const group=new THREE.Group(),t=animalTypes[type],mat=new THREE.MeshStandardMaterial({color:t.color,roughness:.75});
- const body=new THREE.Mesh(new THREE.SphereGeometry(1,24,16),mat);body.scale.set(1.35,.9,.9);body.position.y=1.05;group.add(body);
- const head=new THREE.Mesh(new THREE.SphereGeometry(.62,24,16),mat);head.position.set(0,1.55,.82);group.add(head);
- const eyeMat=new THREE.MeshStandardMaterial({color:0x111111});
- [-.18,.18].forEach(x=>{const e=new THREE.Mesh(new THREE.SphereGeometry(.07,12,8),eyeMat);e.position.set(x,1.65,1.34);group.add(e)});
- const legMat=new THREE.MeshStandardMaterial({color:type==="pig"?0xff8fa4:0x5d4037});
- [-.65,.65].forEach(x=>[-.42,.42].forEach(z=>{const l=new THREE.Mesh(new THREE.CylinderGeometry(.16,.2,.75,12),legMat);l.position.set(x,.45,z);group.add(l)}));
- if(type==="cow"){const spot=new THREE.Mesh(new THREE.SphereGeometry(.3,16,10),new THREE.MeshStandardMaterial({color:0x333333}));spot.scale.set(1,.3,.6);spot.position.set(.55,1.25,.85);group.add(spot)}
- if(type==="chicken"){const beak=new THREE.Mesh(new THREE.ConeGeometry(.16,.35,8),new THREE.MeshStandardMaterial({color:0xffa000}));beak.rotation.x=Math.PI/2;beak.position.set(0,1.5,1.65);group.add(beak)}
- if(type==="pig"){const sn=new THREE.Mesh(new THREE.CylinderGeometry(.28,.28,.12,16),new THREE.MeshStandardMaterial({color:0xff7897}));sn.rotation.x=Math.PI/2;sn.position.set(0,1.48,1.4);group.add(sn)}
- if(type==="sheep"){for(let i=0;i<5;i++){const wool=new THREE.Mesh(new THREE.SphereGeometry(.45,16,10),new THREE.MeshStandardMaterial({color:0xffffff}));wool.position.set((i-2)*.35,1.45+Math.sin(i)*.25,.25);group.add(wool)}}
- scene.add(group);scenes.set(id,{renderer,scene,camera,group});
- function animate(){if(!document.body.contains(host)){renderer.dispose();return}requestAnimationFrame(animate);group.rotation.y+=.006;group.position.y=Math.sin(Date.now()/500)*.03;renderer.render(scene,camera)}
- animate();
+
+function createAnimalModel(type){
+  const t=animalTypes[type],group=new THREE.Group();
+  const mat=new THREE.MeshStandardMaterial({color:t.color,roughness:.78});
+  const dark=new THREE.MeshStandardMaterial({color:type==="pig"?0xff7897:0x5d4037,roughness:.9});
+  const black=new THREE.MeshStandardMaterial({color:0x171717,roughness:.5});
+
+  const body=new THREE.Mesh(new THREE.SphereGeometry(1,24,16),mat);
+  body.scale.set(1.35,.9,.9);body.position.y=1.25;group.add(body);
+
+  const head=new THREE.Mesh(new THREE.SphereGeometry(.62,24,16),mat);
+  head.position.set(0,1.7,.92);group.add(head);
+
+  [-.2,.2].forEach(x=>{
+    const e=new THREE.Mesh(new THREE.SphereGeometry(.075,12,8),black);
+    e.position.set(x,1.82,1.45);group.add(e);
+  });
+
+  const legs=[];
+  [-.68,.68].forEach(x=>[-.42,.42].forEach(z=>{
+    const l=new THREE.Mesh(new THREE.CylinderGeometry(.15,.2,.78,12),dark);
+    l.position.set(x,.55,z);l.userData.isLeg=true;legs.push(l);group.add(l);
+  }));
+  group.userData.legs=legs;
+
+  if(type==="cow"){
+    const spot=new THREE.Mesh(new THREE.SphereGeometry(.32,16,10),new THREE.MeshStandardMaterial({color:0x333333}));
+    spot.scale.set(1,.3,.65);spot.position.set(.55,1.45,.78);group.add(spot);
+    [-.25,.25].forEach(x=>{
+      const horn=new THREE.Mesh(new THREE.ConeGeometry(.09,.28,8),new THREE.MeshStandardMaterial({color:0xd7c19b}));
+      horn.position.set(x,2.25,.98);horn.rotation.x=-.25;group.add(horn);
+    });
+  }
+  if(type==="chicken"){
+    const beak=new THREE.Mesh(new THREE.ConeGeometry(.15,.35,8),new THREE.MeshStandardMaterial({color:0xffa000}));
+    beak.rotation.x=Math.PI/2;beak.position.set(0,1.67,1.56);group.add(beak);
+    const comb=new THREE.Mesh(new THREE.SphereGeometry(.15,12,8),new THREE.MeshStandardMaterial({color:0xe53935}));
+    comb.scale.set(1,.8,.7);comb.position.set(0,2.25,.92);group.add(comb);
+  }
+  if(type==="pig"){
+    const sn=new THREE.Mesh(new THREE.CylinderGeometry(.28,.28,.13,16),new THREE.MeshStandardMaterial({color:0xff7897}));
+    sn.rotation.x=Math.PI/2;sn.position.set(0,1.62,1.5);group.add(sn);
+    [-.25,.25].forEach(x=>{
+      const ear=new THREE.Mesh(new THREE.ConeGeometry(.16,.32,8),mat);
+      ear.rotation.x=.7;ear.position.set(x,2.2,.92);group.add(ear);
+    });
+  }
+  if(type==="sheep"){
+    for(let i=0;i<6;i++){
+      const wool=new THREE.Mesh(new THREE.SphereGeometry(.43,16,10),new THREE.MeshStandardMaterial({color:0xffffff,roughness:1}));
+      wool.position.set((i-2.5)*.32,1.55+(i%2)*.25,.35);group.add(wool);
+    }
+  }
+
+  group.traverse(o=>{
+    if(o.isMesh){o.castShadow=true;o.receiveShadow=true}
+  });
+  group.userData.animalType=type;
+  return group;
 }
+
+let animalWorld=null;
+let selectedAnimalId=null;
+let animalWorldRunning=false;
+
+function initAnimalWorld(){
+  const host=document.getElementById("animalWorld");
+  if(!host||!window.THREE)return;
+
+  if(animalWorld){
+    animalWorld.resize();
+    animalWorld.syncAnimals();
+    return;
+  }
+
+  const scene=new THREE.Scene();
+  scene.background=new THREE.Color(0x9bdcff);
+  scene.fog=new THREE.Fog(0x9bdcff,24,42);
+
+  const camera=new THREE.PerspectiveCamera(42,1,.1,100);
+  camera.position.set(0,12,17);
+  camera.lookAt(0,0,0);
+
+  const renderer=new THREE.WebGLRenderer({antialias:true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+  renderer.shadowMap.enabled=true;
+  renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  host.innerHTML="";
+  host.appendChild(renderer.domElement);
+
+  scene.add(new THREE.HemisphereLight(0xffffff,0x557744,2.2));
+  const sun=new THREE.DirectionalLight(0xffffff,2.2);
+  sun.position.set(-8,14,8);sun.castShadow=true;
+  sun.shadow.mapSize.set(1024,1024);scene.add(sun);
+
+  const ground=new THREE.Mesh(
+    new THREE.PlaneGeometry(25,18),
+    new THREE.MeshStandardMaterial({color:0x79b957,roughness:1})
+  );
+  ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
+
+  // Grass patches
+  for(let i=0;i<34;i++){
+    const g=new THREE.Mesh(
+      new THREE.CircleGeometry(.16+Math.random()*.18,5),
+      new THREE.MeshStandardMaterial({color:Math.random()>.5?0x5d9e43:0x6fae4c,roughness:1})
+    );
+    g.rotation.x=-Math.PI/2;g.position.set((Math.random()-.5)*22,.012,(Math.random()-.5)*15);
+    scene.add(g);
+  }
+
+  // Fence
+  const fenceMat=new THREE.MeshStandardMaterial({color:0x8d5e3d,roughness:.9});
+  const railMat=new THREE.MeshStandardMaterial({color:0xb87945,roughness:.9});
+  const fenceGroup=new THREE.Group();
+  const bounds=[{x:-11,z:0,rx:0,rz:15},{x:11,z:0,rx:0,rz:15},{x:0,z:-7.5,rx:11,rz:0},{x:0,z:7.5,rx:11,rz:0}];
+  bounds.forEach(b=>{
+    if(b.rx){
+      [-1,0,1].forEach(y=>{
+        const rail=new THREE.Mesh(new THREE.BoxGeometry(b.rx*2,.16,.16),railMat);
+        rail.position.set(b.x,y*1.05+.65,b.z);fenceGroup.add(rail);
+      });
+      for(let x=-10;x<=10;x+=2.5){
+        const post=new THREE.Mesh(new THREE.BoxGeometry(.18,1.65,.18),fenceMat);
+        post.position.set(x,.8,b.z);fenceGroup.add(post);
+      }
+    }else{
+      [-1,0,1].forEach(y=>{
+        const rail=new THREE.Mesh(new THREE.BoxGeometry(.16,.16,b.rz*2),railMat);
+        rail.position.set(b.x,y*1.05+.65,b.z);fenceGroup.add(rail);
+      });
+      for(let z=-6.5;z<=6.5;z+=2.5){
+        const post=new THREE.Mesh(new THREE.BoxGeometry(.18,1.65,.18),fenceMat);
+        post.position.set(b.x,.8,z);fenceGroup.add(post);
+      }
+    }
+  });
+  fenceGroup.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});
+  scene.add(fenceGroup);
+
+  // Gate
+  const gate=new THREE.Mesh(new THREE.BoxGeometry(3,.16,.18),railMat);
+  gate.position.set(0,.7,7.5);scene.add(gate);
+
+  // Water trough
+  const trough=new THREE.Mesh(new THREE.BoxGeometry(2,.35,1.05),new THREE.MeshStandardMaterial({color:0x7b5b43}));
+  trough.position.set(-7,.25,-4.8);trough.castShadow=true;scene.add(trough);
+  const water=new THREE.Mesh(new THREE.BoxGeometry(1.65,.08,.7),new THREE.MeshStandardMaterial({color:0x36a9e8,roughness:.2,metalness:.1}));
+  water.position.set(-7,.47,-4.8);scene.add(water);
+
+  // Hay feeder
+  const hayBase=new THREE.Mesh(new THREE.BoxGeometry(1.7,.3,1.1),new THREE.MeshStandardMaterial({color:0x76533a}));
+  hayBase.position.set(7,.2,-4.5);hayBase.castShadow=true;scene.add(hayBase);
+  for(let i=0;i<5;i++){
+    const hay=new THREE.Mesh(new THREE.CylinderGeometry(.12,.12,1.2,8),new THREE.MeshStandardMaterial({color:0xd5ad3e}));
+    hay.rotation.z=Math.PI/2;hay.position.set(6.55+i*.22,.65,-4.5);scene.add(hay);
+  }
+
+  const animals=new Map();
+
+  function addAnimal(a){
+    ensureAnimalMotion(a);
+    if(animals.has(a.id))return;
+    const model=createAnimalModel(a.type);
+    model.position.set(a.x,0,a.z);
+    model.rotation.y=a.angle;
+    model.userData.animalId=a.id;
+    scene.add(model);animals.set(a.id,{model});
+  }
+
+  function removeAnimal(id){
+    const o=animals.get(id);
+    if(!o)return;
+    scene.remove(o.model);
+    animals.delete(id);
+  }
+
+  function syncAnimals(){
+    const ids=new Set(game.animals.map(a=>a.id));
+    [...animals.keys()].forEach(id=>{if(!ids.has(id))removeAnimal(id)});
+    game.animals.forEach(addAnimal);
+    document.getElementById("penAnimalCount").textContent=game.animals.length;
+  }
+
+  function resize(){
+    const w=Math.max(1,host.clientWidth),h=Math.max(1,host.clientHeight);
+    camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h,false);
+  }
+
+  function chooseTarget(a,now){
+    a.targetX=(Math.random()-.5)*19.5;
+    a.targetZ=(Math.random()-.5)*12.5;
+    a.pauseUntil=now+(900+Math.random()*2600);
+    a.speed=.55+Math.random()*.55;
+  }
+
+  function updateMovement(dt,now){
+    animals.forEach(({model})=>{
+      const a=game.animals.find(x=>x.id===model.userData.animalId);
+      if(!a)return;
+      ensureAnimalMotion(a);
+
+      if(now<a.pauseUntil){
+        model.userData.walking=false;
+        model.position.y=Math.sin(now*.003+a.id)*.025;
+        return;
+      }
+
+      let dx=a.targetX-a.x,dz=a.targetZ-a.z;
+      const dist=Math.hypot(dx,dz);
+      if(dist<.25){chooseTarget(a,now);return}
+
+      const desired=Math.atan2(dx,dz);
+      let diff=desired-a.angle;
+      diff=Math.atan2(Math.sin(diff),Math.cos(diff));
+      a.angle+=Math.max(-dt*2.8,Math.min(dt*2.8,diff));
+
+      const moving=Math.abs(diff)<1.2;
+      if(moving){
+        const step=a.speed*dt;
+        a.x+=Math.sin(a.angle)*step;
+        a.z+=Math.cos(a.angle)*step;
+        a.legPhase+=dt*9;
+      }
+
+      a.x=Math.max(-9.8,Math.min(9.8,a.x));
+      a.z=Math.max(-6.1,Math.min(6.1,a.z));
+
+      model.position.x=a.x;model.position.z=a.z;
+      model.rotation.y=a.angle;
+      model.userData.walking=moving;
+      model.position.y=Math.abs(Math.sin(a.legPhase))*.045;
+
+      const legs=model.userData.legs||[];
+      legs.forEach((leg,i)=>{
+        if(moving)leg.rotation.x=Math.sin(a.legPhase+i*Math.PI)*.38;
+        else leg.rotation.x*=.82;
+      });
+    });
+  }
+
+  function raycastClick(e){
+    const rect=renderer.domElement.getBoundingClientRect();
+    const mouse=new THREE.Vector2(
+      ((e.clientX-rect.left)/rect.width)*2-1,
+      -((e.clientY-rect.top)/rect.height)*2+1
+    );
+    const ray=new THREE.Raycaster();ray.setFromCamera(mouse,camera);
+    const hits=ray.intersectObjects([...animals.values()].map(x=>x.model),true);
+    if(!hits.length)return;
+    let obj=hits[0].object;
+    while(obj&&!obj.userData.animalId)obj=obj.parent;
+    if(!obj)return;
+    selectAnimal(obj.userData.animalId);
+  }
+
+  function selectAnimal(id){
+    selectedAnimalId=id;
+    const a=game.animals.find(x=>x.id===id);
+    if(!a)return;
+    const t=animalTypes[a.type];
+    document.querySelectorAll(".animal-card").forEach(c=>c.classList.toggle("selected",Number(c.dataset.animalId)===id));
+    document.getElementById("selectedAnimalText").textContent=
+      `${t.icon} ${t.name} #${String(id).padStart(3,"0")} · ❤️ ${Math.round(a.health)}% · 😊 ${Math.round(a.happiness)}%`;
+  }
+
+  renderer.domElement.addEventListener("pointerdown",raycastClick);
+  window.addEventListener("resize",resize);
+
+  animalWorld={resize,syncAnimals,selectAnimal};
+  resize();syncAnimals();
+
+  function animate(){
+    if(!document.body.contains(host)){animalWorldRunning=false;return}
+    requestAnimationFrame(animate);
+    const now=Date.now(),dt=Math.min(.05,(now-(animalWorld.lastTime||now))/1000);
+    animalWorld.lastTime=now;
+    updateMovement(dt,now);
+    renderer.render(scene,camera);
+  }
+  animalWorldRunning=true;animate();
+}
+
 function updateUI(){
  document.getElementById("money").textContent=Math.floor(game.money);document.getElementById("levelText").textContent="Level "+game.level;
  document.getElementById("expFill").style.width=(game.exp/game.nextExp*100)+"%";document.getElementById("expText").textContent=`${game.exp} / ${game.nextExp} EXP`;
@@ -428,6 +791,7 @@ function load(){try{const d=localStorage.getItem("miniFarmDeluxeSave");if(d)game
 document.querySelectorAll(".popup").forEach(p=>p.addEventListener("click",e=>{if(e.target===p)p.style.display="none"}));
 setInterval(()=>{if(!document.getElementById("game").classList.contains("hidden")){updateAnimals();updateGrowth();renderFarm();renderAnimals();updateUI();save()}},1000);
 load();
+game.animals.forEach(ensureAnimalMotion);
 if(game.name){document.getElementById("nameInput").value=game.name}
 </script>
 </body>
